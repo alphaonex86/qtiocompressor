@@ -453,13 +453,27 @@ void QtIOCompressor::close()
 
     Calling this function when QtIOCompressor is in ReadOnly mode has no effect.
 */
-void QtIOCompressor::flush()
+void QtIOCompressor::flush(QtIOCompressor::StreamFlush type)
 {
     Q_D(QtIOCompressor);
     if (isOpen() == false || openMode() & ReadOnly)
-        return;
+	return;
 
-    d->flushZlib(Z_PARTIAL_FLUSH);//Z_FULL_FLUSH
+    switch(type)
+    {
+	    case StreamFlushFull:
+		    d->flushZlib(Z_FULL_FLUSH);
+		    break;
+	    case StreamFlushSync:
+		    d->flushZlib(Z_SYNC_FLUSH);
+		    break;
+	    case StreamFlushPartial:
+		    d->flushZlib(Z_PARTIAL_FLUSH);
+	    default:
+		    break;
+    }
+
+    d->flushZlib(Z_PARTIAL_FLUSH);
 }
 
 /*!
@@ -507,8 +521,7 @@ qint64 QtIOCompressor::bytesAvailable() const
 */
 qint64 QtIOCompressor::readData(char *data, qint64 maxSize)
 {
-	qDebug() << "readData";
-    Q_D(QtIOCompressor);
+	Q_D(QtIOCompressor);
 
     if (d->state == QtIOCompressorPrivate::EndOfStream)
     {
@@ -531,11 +544,12 @@ qint64 QtIOCompressor::readData(char *data, qint64 maxSize)
         // Read data if if the input buffer is empty. There could be data in the buffer
         // from a previous readData call.
         if (d->zlibStream.avail_in == 0) {
-            qint64 bytesAvalible = d->device->read(reinterpret_cast<char *>(d->buffer), d->bufferSize);
+	    qint64 bytesAvailable = d->device->read(reinterpret_cast<char *>(d->buffer), d->bufferSize);
+	    qDebug() << QString("compressed data get: %1").arg(bytesAvailable);
             d->zlibStream.next_in = d->buffer;
-            d->zlibStream.avail_in = bytesAvalible;
+	    d->zlibStream.avail_in = bytesAvailable;
 
-            if (bytesAvalible == -1) {
+	    if (bytesAvailable == -1) {
                 d->state = QtIOCompressorPrivate::Error;
                 setErrorString(QT_TRANSLATE_NOOP("QtIOCompressor", "Error reading data from underlying device: ") + d->device->errorString());
                 return -1;
@@ -543,9 +557,9 @@ qint64 QtIOCompressor::readData(char *data, qint64 maxSize)
 
             if (d->state != QtIOCompressorPrivate::InStream) {
                 // If we are not in a stream and get 0 bytes, we are probably trying to read from an empty device.
-                if(bytesAvalible == 0)
+		if(bytesAvailable == 0)
                     return 0;
-                else if (bytesAvalible > 0)
+		else if (bytesAvailable > 0)
                     d->state = QtIOCompressorPrivate::InStream;
             }
         }

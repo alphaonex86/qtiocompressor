@@ -71,6 +71,7 @@ class QT_QTIOCOMPRESSOR_EXPORT QtIOCompressor : public QIODevice
 Q_OBJECT
 public:
 enum StreamFormat { ZlibFormat, GzipFormat, RawZipFormat };
+enum StreamFlush { StreamFlushSync, StreamFlushPartial, StreamFlushFull };
     QtIOCompressor(QIODevice *device, int compressionLevel = 6, int bufferSize = 65500);
     ~QtIOCompressor();
     void setStreamFormat(StreamFormat format);
@@ -79,7 +80,7 @@ enum StreamFormat { ZlibFormat, GzipFormat, RawZipFormat };
     bool isSequential() const;
     bool open(OpenMode mode);
     void close();
-    void flush();
+    void flush(StreamFlush type=StreamFlushSync);
     qint64 bytesAvailable() const;
 protected:
     qint64 readData(char * data, qint64 maxSize);
