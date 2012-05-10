@@ -467,13 +467,11 @@ void QtIOCompressor::flush(QtIOCompressor::StreamFlush type)
 	    case StreamFlushSync:
 		    d->flushZlib(Z_SYNC_FLUSH);
 		    break;
-	    case StreamFlushPartial:
-		    d->flushZlib(Z_PARTIAL_FLUSH);
+	    case StreamFlushPartial:    
 	    default:
+		d->flushZlib(Z_PARTIAL_FLUSH);
 		    break;
     }
-
-    d->flushZlib(Z_PARTIAL_FLUSH);
 }
 
 /*!
